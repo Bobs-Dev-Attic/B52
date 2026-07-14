@@ -18,6 +18,12 @@ crew position on it — so you can be tail gunner on one ship and pilot on anoth
 Each plane has **four gun stations** (top, tail, nose, belly), so a full crew
 means several gunners covering every angle.
 
+Every plane has its own **hull and crew**. Enemy fire can pick off individual
+crew or shoot a whole ship down. If the crew at your station is killed you're
+moved to another station; if your ship goes down you **bail into a surviving
+one**. The raid is lost only when the entire squadron is destroyed — greyed-out
+buttons show which ships and stations are still in the fight.
+
 ## Gameplay loop
 
 1. **Ingress** — fighters come in waves. Jump to the turrets and shoot them down;

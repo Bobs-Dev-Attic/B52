@@ -12,6 +12,12 @@ a daylight raid over Germany and switch freely between three crew positions:
 The bomber keeps flying (autopilot holds heading) while you're at a turret or the
 bombsight, so a single player runs the whole crew by hopping between stations.
 
+You fly in a **squadron of four B-52s** in a combat box. Use the **SQUADRON**
+selector (top of the screen) to jump to any plane in the formation, then pick a
+crew position on it — so you can be tail gunner on one ship and pilot on another.
+Each plane has **four gun stations** (top, tail, nose, belly), so a full crew
+means several gunners covering every angle.
+
 ## Gameplay loop
 
 1. **Ingress** — fighters come in waves. Jump to the turrets and shoot them down;

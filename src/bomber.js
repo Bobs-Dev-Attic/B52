@@ -21,21 +21,22 @@ function mat(color, flat = true) {
 }
 
 function makeEngine() {
+  // Engine points along +z (the flight/nose direction) so the propeller sits
+  // out front, ahead of the wing's leading edge.
   const g = new THREE.Group();
-  const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.62, 2.6, 8), mat(OLIVE_DK));
-  nacelle.rotation.z = Math.PI / 2;
+  const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 2.8, 8), mat(OLIVE_DK));
+  nacelle.rotation.x = Math.PI / 2; // long axis along z
   g.add(nacelle);
-  const hub = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 8), mat(METAL));
-  hub.rotation.z = -Math.PI / 2;
-  hub.position.x = 1.6;
+  const hub = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.7, 8), mat(METAL));
+  hub.rotation.x = Math.PI / 2;     // spinner tip points forward (+z)
+  hub.position.z = 1.7;
   g.add(hub);
-  // spinning prop
+  // spinning prop — blades in the x/y plane, spun about z (the flight axis)
   const prop = new THREE.Group();
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.4, 0.22), mat(0x24261d));
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.09, 2.6, 0.16), mat(0x24261d));
   prop.add(blade);
-  const blade2 = blade.clone(); blade2.rotation.x = Math.PI / 2; prop.add(blade2);
-  prop.position.x = 1.75;
-  prop.rotation.z = Math.PI / 2;
+  const blade2 = blade.clone(); blade2.rotation.z = Math.PI / 2; prop.add(blade2);
+  prop.position.z = 1.75;
   g.add(prop);
   g.userData.prop = prop;
   return g;
@@ -62,7 +63,7 @@ function makeTurret(color = METAL) {
   return g;
 }
 
-export function createBomber() {
+export function createBomber(tailColor = 0xf0f0e0) {
   const bomber = new THREE.Group();
   bomber.name = 'bomber';
 
@@ -103,12 +104,18 @@ export function createBomber() {
   fin.position.set(0, 1.7, -7.4);
   bomber.add(fin);
 
-  // Engines (4, two per wing)
+  // Tail-fin identification band (unique colour per squadron plane)
+  const finBand = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.9, 1.8),
+    new THREE.MeshStandardMaterial({ color: tailColor, flatShading: true }));
+  finBand.position.set(0, 2.85, -7.4);
+  bomber.add(finBand);
+
+  // Engines (4, two per wing) — mounted at the wing leading edge, props out front
   const engineX = [-8.5, -4.5, 4.5, 8.5];
   bomber.userData.props = [];
   for (const x of engineX) {
     const e = makeEngine();
-    e.position.set(x, -0.2, 1.4);
+    e.position.set(x, -0.15, 2.2);
     bomber.add(e);
     bomber.userData.props.push(e.userData.prop);
   }

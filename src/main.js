@@ -10,7 +10,7 @@ import { PilotRole, GunnerRole, BombardierRole } from './roles.js';
 import { feed, updateHud } from './hud.js';
 
 // Game version — keep in sync with package.json and CHANGELOG.md.
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 
 // ------------------------------- DOM refs ----------------------------------
 const $ = (id) => document.getElementById(id);
@@ -71,6 +71,38 @@ const squadron = FORMATION.map((f) => {
 let activePlane = 0;
 let bomber = squadron[activePlane];
 
+// Crew stations on every plane. Keys map to the crew-alive record; each plane
+// can lose stations (crew killed) and, at 0 hull or no crew, is destroyed.
+const CREW_KEYS = ['pilot', 'g0', 'g1', 'g2', 'g3', 'bombardier'];
+const CREW_LABEL = { pilot: 'PILOT', bombardier: 'BOMBARDIER', g0: 'TOP GUNNER', g1: 'TAIL GUNNER', g2: 'NOSE GUNNER', g3: 'BELLY GUNNER' };
+const _tmp = new THREE.Vector3();
+
+function initPlaneState(b) {
+  b.userData.hull = 100;
+  b.userData.alive = true;
+  b.userData.dying = 0;
+  b.userData.crew = { pilot: true, g0: true, g1: true, g2: true, g3: true, bombardier: true };
+  b.visible = true;
+}
+squadron.forEach(initPlaneState);
+
+// The crew-station key for the player's current role + turret.
+function stationKey() {
+  if (game.roleKey === 'gunner') return 'g' + roles.gunner.index;
+  return game.roleKey; // 'pilot' | 'bombardier'
+}
+function anyGunnerAlive(b) { return b.userData.crew.g0 || b.userData.crew.g1 || b.userData.crew.g2 || b.userData.crew.g3; }
+function roleAlive(b, role) { return role === 'gunner' ? anyGunnerAlive(b) : b.userData.crew[role]; }
+
+// First still-crewed station on a plane, preferring pilot → gunners → bombardier.
+function firstAliveStation(b) {
+  const c = b.userData.crew;
+  if (c.pilot) return { role: 'pilot' };
+  for (let i = 0; i < 4; i++) if (c['g' + i]) return { role: 'gunner', turret: i };
+  if (c.bombardier) return { role: 'bombardier' };
+  return null;
+}
+
 const fighters = new FighterManager(scene, effects, bomber, audio);
 const bombs = new BombManager(scene, effects, world, audio);
 const input = new Input(dom);
@@ -78,11 +110,13 @@ const input = new Input(dom);
 Object.assign(game, { audio, effects, world, bomber, squadron, fighters, bombs, input, time: 0 });
 
 // Position the non-active planes relative to the active one, with a gentle bob.
+// Downed planes are skipped here — they tumble via updateWrecks().
 function layoutSquadron() {
   const activeOff = FORMATION[activePlane].offset;
   for (let i = 0; i < squadron.length; i++) {
     if (i === activePlane) continue;
     const b = squadron[i];
+    if (!b.userData.alive) continue;
     const rel = FORMATION[i].offset.clone().sub(activeOff);
     const bob = Math.sin(game.time * 0.6 + i * 2.1) * 1.3;
     b.position.set(rel.x, game.altitude + rel.y + bob, rel.z);
@@ -90,33 +124,131 @@ function layoutSquadron() {
   }
 }
 
+// Tumble & smoke for planes that have just been shot down, then hide them.
+function updateWrecks(dt) {
+  for (const b of squadron) {
+    if (b.userData.dying <= 0) continue;
+    b.userData.dying -= dt;
+    b.position.y -= 34 * dt;
+    b.position.z -= 20 * dt;
+    b.rotation.z += 0.9 * dt;
+    b.rotation.x += 0.5 * dt;
+    if (Math.random() < 0.35) effects.explosion(b.getWorldPosition(_tmp).clone(), { color: 0x222222, size: 1, count: 3 });
+    if (b.userData.dying <= 0) b.visible = false;
+  }
+}
+
+// Player-initiated switch to plane i (only to a surviving plane).
 function setActivePlane(i) {
-  if (i === activePlane || game.state !== 'playing') return;
+  if (game.state !== 'playing' || i === activePlane) return;
+  if (!squadron[i].userData.alive) return;
+  switchToPlane(i, null);
+}
+
+// Take control of plane i at station `st` (or its first surviving station).
+function switchToPlane(i, st) {
   activePlane = i;
   bomber = squadron[i];
   game.bomber = bomber;
   bomber.position.set(0, game.altitude, 0);
   bomber.rotation.set(0, 0, 0);
-  // re-enter the current role so the camera reparents onto the new plane
-  if (current) { current.exit(); current.enter(); }
+  applyStation(st || firstAliveStation(bomber));
   layoutSquadron();
-  document.querySelectorAll('.plane-btn').forEach((b) =>
-    b.classList.toggle('active', Number(b.dataset.plane) === i));
   dom.planeName.textContent = FORMATION[i].name;
+  refreshUI();
+}
+
+// Put the player at a specific station on the CURRENT plane.
+function applyStation(st) {
+  if (!st) return;
+  if (st.role === 'gunner') roles.gunner.index = st.turret ?? roles.gunner.index;
+  setRole(st.role);
+  if (st.role === 'gunner') roles.gunner.setTurret(roles.gunner.index);
+  refreshUI();
+}
+
+// Sync plane / role / turret buttons to alive + active state.
+function refreshUI() {
+  document.querySelectorAll('.plane-btn').forEach((el) => {
+    const i = Number(el.dataset.plane);
+    el.classList.toggle('active', i === activePlane);
+    el.classList.toggle('dead', !squadron[i].userData.alive);
+  });
+  document.querySelectorAll('.role-btn').forEach((el) => {
+    el.classList.toggle('active', el.dataset.role === game.roleKey);
+    el.classList.toggle('dead', !roleAlive(bomber, el.dataset.role));
+  });
+  document.querySelectorAll('.turret-btn').forEach((el) => {
+    const i = Number(el.dataset.turret);
+    el.classList.toggle('active', i === roles.gunner.index);
+    el.classList.toggle('dead', !bomber.userData.crew['g' + i]);
+  });
 }
 
 game.onKill = () => {
   game.kills++; game.score += 100;
   feed(dom, 'FIGHTER DOWN +100', 'good');
 };
-game.damageHull = (amt) => {
-  game.hull -= amt;
-  game.shake = Math.min(0.5, game.shake + amt * 0.02);
-  if (game.hull <= 0 && game.state === 'playing') endMission(false);
-};
 
-fighters.onHullHit = (dmg) => { game.damageHull(dmg); audio.play('hit', 0.4); };
-bombs.onHit = (hit, bld) => {
+// Damage a plane; may kill a crew station; destroys the plane at 0 hull.
+function damagePlane(b, amt, canKillCrew) {
+  if (!b.userData.alive) return;
+  b.userData.hull -= amt;
+  if (b === bomber) game.shake = Math.min(0.5, game.shake + amt * 0.02);
+  if (canKillCrew && Math.random() < 0.16) killRandomCrew(b);
+  if (b.userData.hull <= 0) destroyPlane(b);
+}
+
+function killRandomCrew(b) {
+  const alive = CREW_KEYS.filter((k) => b.userData.crew[k]);
+  if (!alive.length) return;
+  const k = alive[Math.floor(Math.random() * alive.length)];
+  b.userData.crew[k] = false;
+  if (b === bomber) {
+    feed(dom, CREW_LABEL[k] + ' KILLED', 'bad');
+    refreshUI();
+    if (k === stationKey()) bailStation();
+  }
+  if (CREW_KEYS.every((x) => !b.userData.crew[x])) destroyPlane(b);
+}
+
+function destroyPlane(b) {
+  if (!b.userData.alive) return;
+  b.userData.alive = false;
+  b.userData.hull = 0;
+  b.userData.dying = 3;
+  effects.explosion(b.getWorldPosition(_tmp).clone(), { color: 0xff7733, size: 3, count: 24 });
+  audio.play('boom', 0.7);
+  const idx = squadron.indexOf(b);
+  feed(dom, 'SHIP ' + (idx + 1) + ' DOWN', 'bad');
+  const survivors = squadron.filter((p) => p.userData.alive);
+  if (!survivors.length) { endMission(false); return; }
+  if (b === bomber) {
+    const j = squadron.indexOf(survivors[0]);
+    switchToPlane(j, null);
+    feed(dom, 'BAILED TO SHIP ' + (j + 1), 'good');
+  } else {
+    refreshUI();
+  }
+}
+
+// Current station's crew was killed: hop to another station, else lose the plane.
+function bailStation() {
+  const st = firstAliveStation(bomber);
+  if (!st) { destroyPlane(bomber); return; }
+  applyStation(st);
+  feed(dom, 'MOVED TO ' + CREW_LABEL[st.role === 'gunner' ? 'g' + st.turret : st.role], 'good');
+}
+
+fighters.onHullHit = (dmg) => {
+  // fighters work the whole formation: usually your plane, sometimes a wingman
+  const others = squadron.filter((p) => p.userData.alive && p !== bomber);
+  const target = (others.length && Math.random() < 0.3)
+    ? others[Math.floor(Math.random() * others.length)] : bomber;
+  damagePlane(target, dmg, true);
+  audio.play('hit', 0.4);
+};
+bombs.onHit = (hit) => {
   if (hit) {
     game.hits++; game.score += 500;
     feed(dom, 'TARGET DESTROYED +500', 'good');
@@ -154,13 +286,25 @@ function setRole(name) {
 
 // ------------------------------- UI wiring ---------------------------------
 document.querySelectorAll('.role-btn').forEach((b) =>
-  b.addEventListener('click', () => { if (game.state === 'playing') setRole(b.dataset.role); }));
+  b.addEventListener('click', () => {
+    if (game.state !== 'playing') return;
+    const role = b.dataset.role;
+    if (!roleAlive(bomber, role)) { feed(dom, 'NO CREW AT THAT STATION', 'bad'); return; }
+    if (role === 'gunner' && !bomber.userData.crew['g' + roles.gunner.index]) {
+      for (let i = 0; i < 4; i++) if (bomber.userData.crew['g' + i]) { roles.gunner.index = i; break; }
+    }
+    setRole(role);
+    if (role === 'gunner') roles.gunner.setTurret(roles.gunner.index);
+    refreshUI();
+  }));
 
 document.querySelectorAll('.turret-btn').forEach((b) =>
   b.addEventListener('click', () => {
-    document.querySelectorAll('.turret-btn').forEach((x) => x.classList.remove('active'));
-    b.classList.add('active');
-    roles.gunner.setTurret(Number(b.dataset.turret));
+    if (game.state !== 'playing') return;
+    const i = Number(b.dataset.turret);
+    if (!bomber.userData.crew['g' + i]) { feed(dom, 'GUNNER DOWN', 'bad'); return; }
+    roles.gunner.setTurret(i);
+    refreshUI();
   }));
 
 document.querySelectorAll('.plane-btn').forEach((b) =>
@@ -183,10 +327,8 @@ function startGame() {
   activePlane = 0;
   bomber = squadron[0];
   game.bomber = bomber;
-  squadron.forEach((b) => { b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); });
+  squadron.forEach((b) => { b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); initPlaneState(b); });
   layoutSquadron();
-  document.querySelectorAll('.plane-btn').forEach((b) =>
-    b.classList.toggle('active', Number(b.dataset.plane) === 0));
   dom.planeName.textContent = FORMATION[0].name;
   fighters.reset();
   bombs.reset();
@@ -194,6 +336,7 @@ function startGame() {
   dom.over.classList.add('hidden');
   dom.hud.classList.remove('hidden');
   setRole('pilot');
+  refreshUI();
 }
 
 function endMission(won) {
@@ -203,16 +346,20 @@ function endMission(won) {
   dom.over.classList.toggle('win', won);
   dom.over.classList.toggle('lose', !won);
   const total = world.targetBuildings.length;
-  const hullBonus = Math.max(0, Math.round(game.hull) * 10);
-  game.score += hullBonus;
+  const survivors = squadron.filter((p) => p.userData.alive).length;
+  const hull = Math.max(0, Math.round(game.hull));
+  const hullBonus = hull * 10;
+  const shipBonus = survivors * 250;
+  game.score += hullBonus + shipBonus;
   dom.overTitle.textContent = won
     ? (game.hits === total ? 'TARGET OBLITERATED' : 'RAID COMPLETE')
-    : 'SHOT DOWN';
+    : 'SQUADRON LOST';
   dom.overStats.innerHTML = `
     <div>Targets destroyed: <b>${game.hits} / ${total}</b></div>
+    <div>Ships returned: <b>${survivors} / ${squadron.length}</b></div>
     <div>Fighters splashed: <b>${game.kills}</b></div>
-    <div>Hull remaining: <b>${Math.max(0, Math.round(game.hull))}%</b></div>
-    <div>Hull bonus: <b>+${hullBonus}</b></div>
+    <div>Flagship hull: <b>${hull}%</b></div>
+    <div>Bonus: <b>+${hullBonus + shipBonus}</b></div>
     <div style="margin-top:8px;font-size:20px">SCORE: <b>${game.score.toLocaleString()}</b></div>`;
 }
 
@@ -231,8 +378,8 @@ function updateFlak(dt) {
     );
     effects.flakBurst(p);
     audio.play('boom', 0.18);
-    // close bursts damage the hull
-    if (p.length() < 55 && Math.random() < 0.5) game.damageHull(4 + Math.random() * 6);
+    // close bursts damage the active plane's hull
+    if (p.length() < 55 && Math.random() < 0.5) damagePlane(bomber, 4 + Math.random() * 6, false);
   }
 }
 
@@ -256,10 +403,13 @@ function frame(now) {
 
     current.update(dt, input);
     layoutSquadron();
+    updateWrecks(dt);
     fighters.update(dt, true);
     bombs.update(dt);
     effects.update(dt);
     updateFlak(dt);
+    // HUD hull tracks the plane you're currently flying
+    game.hull = bomber.userData.hull;
     // bomb count from what's been dropped
     game.bombsLeft = Math.max(0, 12 - dropped);
 
@@ -305,5 +455,12 @@ camera.lookAt(0, 0, 0);
 
 // expose for debugging / automated testing
 window.__game = game;
+game.__debug = {
+  damageActive: (a, kill = false) => damagePlane(bomber, a, kill),
+  killStation: () => killRandomCrew(bomber),
+  destroyActive: () => destroyPlane(bomber),
+  squadronAlive: () => squadron.map((p) => p.userData.alive),
+  activeIndex: () => activePlane,
+};
 
 requestAnimationFrame(frame);

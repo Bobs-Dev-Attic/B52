@@ -124,6 +124,10 @@ html, body {
   border-bottom: 3px solid var(--tc, var(--stroke));
 }
 .plane-btn.active { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+.plane-btn.dead, .role-btn.dead, .turret-btn.dead {
+  opacity: 0.35; text-decoration: line-through; filter: grayscale(1);
+}
+.plane-btn.dead { border-bottom-color: #555; }
 
 /* ---------- Turret selector ---------- */
 #turrets { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); display: flex; gap: 5px; }

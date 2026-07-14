@@ -5,6 +5,22 @@ All notable changes to **B-52 Raid** are recorded here. Versioning follows
 tag in the corner, and is kept in sync across `package.json`, `src/main.js`
 (`VERSION`), and this file.
 
+## [0.3.0] — 2026-07-14
+### Added
+- **Battle damage & casualties.** Each squadron plane now has its own hull and a
+  six-station crew (pilot, four gunners, bombardier). Fighter fire works the whole
+  formation and can knock out individual crew or down a whole ship.
+- **Auto bail-out.** If the crew at your current station is killed you're moved to
+  another station on the ship; if your ship goes down you're dropped into a
+  surviving one. The raid is lost only when the whole squadron is gone.
+- Downed planes tumble and smoke out of the formation; the SQUADRON, crew-role,
+  and turret buttons grey out to show who's still flying and manned.
+- Mission-end screen now reports ships returned and awards a per-ship survival bonus.
+
+### Confirmed
+- Propellers sit in front of the wings (verified).
+- Gunner horizontal aim: dragging right swings the view right (verified).
+
 ## [0.2.0] — 2026-07-14
 ### Added
 - **Squadron of four B-52s** flying in a combat box. A new **SQUADRON** selector

@@ -28,6 +28,7 @@
     <!-- Top-left status -->
     <div id="status" class="panel">
       <div class="row"><span class="lbl">ROLE</span><span id="roleName">PILOT</span></div>
+      <div class="row"><span class="lbl">PLANE</span><span id="planeName">LEAD</span></div>
       <div class="row"><span class="lbl">ALT</span><span id="alt">0</span> ft</div>
       <div class="row"><span class="lbl">SPD</span><span id="spd">0</span> mph</div>
       <div class="row"><span class="lbl">HDG</span><span id="hdg">0</span>°</div>
@@ -41,6 +42,15 @@
       <div class="row"><span class="lbl">TARGET</span><span id="tgtDist">--</span> mi</div>
       <div class="row"><span class="lbl">BOMBS</span><span id="bombs">0</span></div>
       <div class="row"><span class="lbl">SCORE</span><span id="score">0</span></div>
+    </div>
+
+    <!-- Squadron plane selector -->
+    <div id="planes">
+      <span class="plabel">SQUADRON</span>
+      <button class="plane-btn active" data-plane="0" style="--tc:#f0f0e0">1</button>
+      <button class="plane-btn" data-plane="1" style="--tc:#ffcc44">2</button>
+      <button class="plane-btn" data-plane="2" style="--tc:#5e9ecb">3</button>
+      <button class="plane-btn" data-plane="3" style="--tc:#e04a3a">4</button>
     </div>
 
     <!-- Center reticle (gunner / bombardier) -->
@@ -105,6 +115,7 @@
       </ul>
       <button id="startBtn">START RAID</button>
       <p class="hint" id="ctrlHint">WASD / arrows fly · drag to aim · Space to fire · B to drop</p>
+      <p class="ver" id="startVer">v0.0.0</p>
     </div>
   </div>
 
@@ -116,6 +127,9 @@
       <button id="againBtn">FLY AGAIN</button>
     </div>
   </div>
+
+  <!-- Persistent version tag (set from VERSION in main.js) -->
+  <div id="version">v0.0.0</div>
 
   <script type="module" src="./src/main.js"></script>
 </body>

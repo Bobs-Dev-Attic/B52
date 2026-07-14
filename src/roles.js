@@ -106,7 +106,8 @@ export class GunnerRole {
     const g = this.game;
     const aim = input.consumeAim();
     const sens = 0.0034;
-    this.yawOff = THREE.MathUtils.clamp(this.yawOff + aim.dx * sens, -this.base.range, this.base.range);
+    // drag right → view swings right (dx was inverted before)
+    this.yawOff = THREE.MathUtils.clamp(this.yawOff - aim.dx * sens, -this.base.range, this.base.range);
     this.pitchOff = THREE.MathUtils.clamp(this.pitchOff - aim.dy * sens, -1.2, 1.2);
 
     const yaw = this.base.yaw + this.yawOff;

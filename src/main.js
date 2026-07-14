@@ -9,6 +9,9 @@ import { Audio } from './audio.js';
 import { PilotRole, GunnerRole, BombardierRole } from './roles.js';
 import { feed, updateHud } from './hud.js';
 
+// Game version — keep in sync with package.json and CHANGELOG.md.
+const VERSION = '0.2.0';
+
 // ------------------------------- DOM refs ----------------------------------
 const $ = (id) => document.getElementById(id);
 const dom = {
@@ -21,7 +24,12 @@ const dom = {
   stick: $('stick'), throttle: $('throttle'),
   startBtn: $('startBtn'), againBtn: $('againBtn'),
   overTitle: $('overTitle'), overStats: $('overStats'),
+  planeName: $('planeName'), version: $('version'), startVer: $('startVer'),
 };
+
+// Stamp the version onto the title screen and the persistent tag.
+dom.version.textContent = `v${VERSION}`;
+dom.startVer.textContent = `v${VERSION}`;
 
 // ------------------------------- Renderer ----------------------------------
 const renderer = new THREE.WebGLRenderer({ canvas: dom.canvas, antialias: true, powerPreference: 'high-performance' });
@@ -44,13 +52,58 @@ const game = {
 const audio = new Audio();
 const effects = new Effects(scene);
 const world = createWorld(scene);
-const bomber = createBomber();
-scene.add(bomber);
+
+// ------------------------------- Squadron ----------------------------------
+// A flight of four B-52s in a combat box. The player's ACTIVE plane sits at the
+// world origin (the world scrolls beneath it); the others hold formation at a
+// fixed offset relative to it. You can jump to any plane and any crew station.
+const FORMATION = [
+  { name: 'LEAD',  offset: new THREE.Vector3(0, 0, 0),      tail: 0xf0f0e0 },
+  { name: 'LEFT',  offset: new THREE.Vector3(-74, -6, -48), tail: 0xffcc44 },
+  { name: 'RIGHT', offset: new THREE.Vector3(74, -6, -48),  tail: 0x5e9ecb },
+  { name: 'HIGH',  offset: new THREE.Vector3(0, 13, -94),   tail: 0xe04a3a },
+];
+const squadron = FORMATION.map((f) => {
+  const b = createBomber(f.tail);
+  scene.add(b);
+  return b;
+});
+let activePlane = 0;
+let bomber = squadron[activePlane];
+
 const fighters = new FighterManager(scene, effects, bomber, audio);
 const bombs = new BombManager(scene, effects, world, audio);
 const input = new Input(dom);
 
-Object.assign(game, { audio, effects, world, bomber, fighters, bombs, input });
+Object.assign(game, { audio, effects, world, bomber, squadron, fighters, bombs, input, time: 0 });
+
+// Position the non-active planes relative to the active one, with a gentle bob.
+function layoutSquadron() {
+  const activeOff = FORMATION[activePlane].offset;
+  for (let i = 0; i < squadron.length; i++) {
+    if (i === activePlane) continue;
+    const b = squadron[i];
+    const rel = FORMATION[i].offset.clone().sub(activeOff);
+    const bob = Math.sin(game.time * 0.6 + i * 2.1) * 1.3;
+    b.position.set(rel.x, game.altitude + rel.y + bob, rel.z);
+    b.rotation.set(0, 0, Math.sin(game.time * 0.5 + i) * 0.04);
+  }
+}
+
+function setActivePlane(i) {
+  if (i === activePlane || game.state !== 'playing') return;
+  activePlane = i;
+  bomber = squadron[i];
+  game.bomber = bomber;
+  bomber.position.set(0, game.altitude, 0);
+  bomber.rotation.set(0, 0, 0);
+  // re-enter the current role so the camera reparents onto the new plane
+  if (current) { current.exit(); current.enter(); }
+  layoutSquadron();
+  document.querySelectorAll('.plane-btn').forEach((b) =>
+    b.classList.toggle('active', Number(b.dataset.plane) === i));
+  dom.planeName.textContent = FORMATION[i].name;
+}
 
 game.onKill = () => {
   game.kills++; game.score += 100;
@@ -110,6 +163,9 @@ document.querySelectorAll('.turret-btn').forEach((b) =>
     roles.gunner.setTurret(Number(b.dataset.turret));
   }));
 
+document.querySelectorAll('.plane-btn').forEach((b) =>
+  b.addEventListener('click', () => setActivePlane(Number(b.dataset.plane))));
+
 dom.startBtn.addEventListener('click', startGame);
 dom.againBtn.addEventListener('click', startGame);
 
@@ -124,8 +180,14 @@ function startGame() {
   dropped = 0;
   world.ground.position.set(0, GROUND_Y, 0);
   world.targetBuildings.forEach((b) => { b.destroyed = false; b.mesh.visible = true; });
-  bomber.position.set(0, 0, 0);
-  bomber.rotation.set(0, 0, 0);
+  activePlane = 0;
+  bomber = squadron[0];
+  game.bomber = bomber;
+  squadron.forEach((b) => { b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); });
+  layoutSquadron();
+  document.querySelectorAll('.plane-btn').forEach((b) =>
+    b.classList.toggle('active', Number(b.dataset.plane) === 0));
+  dom.planeName.textContent = FORMATION[0].name;
   fighters.reset();
   bombs.reset();
   dom.start.classList.add('hidden');
@@ -188,10 +250,12 @@ function frame(now) {
     game.targetDist = world.ground.position.z + TARGET_START_DIST;
     game.heading = 92 + input.stick.x * 6 + world.ground.position.x * 0.02;
 
-    // spin the props
-    bomber.userData.props.forEach((p) => (p.rotation.z += dt * 40));
+    game.time += dt;
+    // spin every plane's propellers
+    for (const b of squadron) b.userData.props.forEach((p) => (p.rotation.z += dt * 40));
 
     current.update(dt, input);
+    layoutSquadron();
     fighters.update(dt, true);
     bombs.update(dt);
     effects.update(dt);
@@ -219,8 +283,10 @@ function frame(now) {
 
     updateHud(dom, game);
   } else {
-    // idle spin on menu for a bit of life
-    bomber.rotation.y += dt * 0.05;
+    // menu: show the formation drifting with props turning
+    game.time += dt;
+    for (const b of squadron) b.userData.props.forEach((p) => (p.rotation.z += dt * 40));
+    layoutSquadron();
     effects.update(dt);
   }
 

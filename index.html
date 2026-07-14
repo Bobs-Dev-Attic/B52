@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1a1c1a" />
+  <title>B-52 Raid — WWII Bomber Crew</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>✈️</text></svg>" />
+
+  <!-- Three.js is vendored locally (vendor/three.module.js) so the game is fully
+       self-contained: no CDN, no build step, works offline on any modern browser. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" class="hidden">
+    <!-- Top-left status -->
+    <div id="status" class="panel">
+      <div class="row"><span class="lbl">ROLE</span><span id="roleName">PILOT</span></div>
+      <div class="row"><span class="lbl">ALT</span><span id="alt">0</span> ft</div>
+      <div class="row"><span class="lbl">SPD</span><span id="spd">0</span> mph</div>
+      <div class="row"><span class="lbl">HDG</span><span id="hdg">0</span>°</div>
+    </div>
+
+    <!-- Top-right mission -->
+    <div id="mission" class="panel right">
+      <div class="row"><span class="lbl">HULL</span>
+        <span class="bar"><i id="hullBar"></i></span>
+      </div>
+      <div class="row"><span class="lbl">TARGET</span><span id="tgtDist">--</span> mi</div>
+      <div class="row"><span class="lbl">BOMBS</span><span id="bombs">0</span></div>
+      <div class="row"><span class="lbl">SCORE</span><span id="score">0</span></div>
+    </div>
+
+    <!-- Center reticle (gunner / bombardier) -->
+    <div id="reticle" class="hidden"></div>
+    <div id="bombsight" class="hidden">
+      <div class="bs-ring"></div>
+      <div class="bs-cross-h"></div>
+      <div class="bs-cross-v"></div>
+      <div id="bombPredict"></div>
+    </div>
+
+    <!-- Kill / event feed -->
+    <div id="feed"></div>
+
+    <!-- Role switch bar -->
+    <div id="roles">
+      <button class="role-btn active" data-role="pilot"><span class="ico">🛩️</span>Pilot</button>
+      <button class="role-btn" data-role="gunner"><span class="ico">🔫</span>Gunner</button>
+      <button class="role-btn" data-role="bombardier"><span class="ico">💣</span>Bombardier</button>
+    </div>
+
+    <!-- Gunner turret selector -->
+    <div id="turrets" class="hidden">
+      <button class="turret-btn active" data-turret="0">Top</button>
+      <button class="turret-btn" data-turret="1">Tail</button>
+      <button class="turret-btn" data-turret="2">Nose</button>
+      <button class="turret-btn" data-turret="3">Belly</button>
+    </div>
+
+    <!-- Ammo / heat for gunner -->
+    <div id="gunInfo" class="panel bottom hidden">
+      <span class="lbl">GUN</span>
+      <span class="bar heat"><i id="heatBar"></i></span>
+    </div>
+
+    <!-- Action buttons (right thumb) -->
+    <button id="fireBtn" class="action hidden">FIRE</button>
+    <button id="dropBtn" class="action drop hidden">DROP<br><small>BOMBS</small></button>
+
+    <!-- Pilot virtual stick + throttle (left thumb) -->
+    <div id="stick" class="hidden"><div id="stickKnob"></div></div>
+    <div id="throttle" class="hidden">
+      <div id="throttleFill"></div>
+      <span class="throttle-lbl">THR</span>
+    </div>
+  </div>
+
+  <!-- ===================== START SCREEN ===================== -->
+  <div id="start">
+    <div class="start-inner">
+      <h1>B-52 <span>RAID</span></h1>
+      <p class="tag">WWII Heavy Bomber — Crew Simulator</p>
+      <p class="brief">
+        You are the crew of a heavy bomber on a daylight raid over Germany.
+        Fly the ship, man the gun turrets against Luftwaffe fighters, and put
+        your bombs on the target. Switch between crew positions at any time.
+      </p>
+      <ul class="controls-list">
+        <li><b>🛩️ Pilot</b> — steer, climb/dive &amp; hold formation through the flak</li>
+        <li><b>🔫 Gunner</b> — aim the turrets, splash incoming fighters</li>
+        <li><b>💣 Bombardier</b> — line up the bombsight over the target &amp; release</li>
+      </ul>
+      <button id="startBtn">START RAID</button>
+      <p class="hint" id="ctrlHint">WASD / arrows fly · drag to aim · Space to fire · B to drop</p>
+    </div>
+  </div>
+
+  <!-- ===================== MISSION END ===================== -->
+  <div id="over" class="hidden">
+    <div class="over-inner">
+      <h2 id="overTitle">MISSION COMPLETE</h2>
+      <div id="overStats"></div>
+      <button id="againBtn">FLY AGAIN</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

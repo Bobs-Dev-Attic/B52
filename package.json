@@ -1,0 +1,24 @@
+{
+  "name": "b52-raid",
+  "version": "0.1.0",
+  "description": "Mobile low-poly 3D WWII heavy-bomber crew simulator — fly, gun the turrets, and bomb the target over Germany.",
+  "type": "module",
+  "scripts": {
+    "start": "node serve.js 8080",
+    "dev": "node serve.js 8080"
+  },
+  "keywords": [
+    "game",
+    "threejs",
+    "webgl",
+    "mobile",
+    "wwii",
+    "bomber",
+    "low-poly"
+  ],
+  "license": "MIT",
+  "comment": "Three.js is vendored in ./vendor so no install is needed to play. This dep is listed only to document the pinned version.",
+  "dependencies": {
+    "three": "0.160.0"
+  }
+}

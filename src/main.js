@@ -9,6 +9,9 @@ import { Audio } from './audio.js';
 import { PilotRole, GunnerRole, BombardierRole } from './roles.js';
 import { feed, updateHud } from './hud.js';
 
+// Game version — keep in sync with package.json and CHANGELOG.md.
+const VERSION = '0.2.0';
+
 // ------------------------------- DOM refs ----------------------------------
 const $ = (id) => document.getElementById(id);
 const dom = {
@@ -21,8 +24,12 @@ const dom = {
   stick: $('stick'), throttle: $('throttle'),
   startBtn: $('startBtn'), againBtn: $('againBtn'),
   overTitle: $('overTitle'), overStats: $('overStats'),
-  planeName: $('planeName'),
+  planeName: $('planeName'), version: $('version'), startVer: $('startVer'),
 };
+
+// Stamp the version onto the title screen and the persistent tag.
+dom.version.textContent = `v${VERSION}`;
+dom.startVer.textContent = `v${VERSION}`;
 
 // ------------------------------- Renderer ----------------------------------
 const renderer = new THREE.WebGLRenderer({ canvas: dom.canvas, antialias: true, powerPreference: 'high-performance' });

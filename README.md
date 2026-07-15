@@ -26,14 +26,18 @@ buttons show which ships and stations are still in the fight.
 
 ## Gameplay loop
 
+The raid runs over an **endless, procedurally-generated countryside** and takes
+you across a **string of target complexes** — a long mission, not a single run.
+
 1. **Ingress** — fighters come in waves. Jump to the turrets and shoot them down;
    every hit they land drops your hull integrity.
 2. **Line up** — as pilot, drift laterally and set your altitude so the flight
-   path runs over the factory complex.
+   path runs over the next factory complex.
 3. **Bomb run** — switch to the bombardier, wait until the target ring slides
-   under the red impact predictor, and release. Flak thickens the closer you get.
-4. **Egress / score** — once the target passes behind you the raid ends. Score
-   comes from fighters splashed, targets destroyed, and hull remaining.
+   under the red impact predictor, and release. Flak thickens over each target.
+4. **Repeat & score** — do it again for the next target down the route. The raid
+   ends once the last target has passed; score comes from structures destroyed,
+   fighters splashed, ships that made it home, and hull remaining.
 
 ## Controls
 

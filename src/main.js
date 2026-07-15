@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { createWorld, GROUND_Y, TARGET_START_DIST } from './world.js';
+import { createWorld, GROUND_Y } from './world.js';
+import { TargetManager } from './targets.js';
 import { createBomber } from './bomber.js';
 import { Effects } from './effects.js';
 import { FighterManager } from './fighters.js';
@@ -10,7 +11,12 @@ import { PilotRole, GunnerRole, BombardierRole } from './roles.js';
 import { feed, updateHud } from './hud.js';
 
 // Game version — keep in sync with package.json and CHANGELOG.md.
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
+
+// How many target complexes make up a raid, and how many bombs you carry.
+const RAID_TARGETS = 6;
+const BOMB_LOAD = 24;
+const BUILDINGS_PER_TARGET = 5;
 
 // ------------------------------- DOM refs ----------------------------------
 const $ = (id) => document.getElementById(id);
@@ -44,8 +50,8 @@ const game = {
   scene, camera, dom, GROUND_Y,
   state: 'menu',
   airspeed: 140, altitude: 0, heading: 92,
-  hull: 100, score: 0, kills: 0, bombsLeft: 12, hits: 0,
-  targetDist: TARGET_START_DIST,
+  hull: 100, score: 0, kills: 0, bombsLeft: BOMB_LOAD, hits: 0,
+  targetDist: Infinity, worldX: 0,
   flakTimer: 0, shake: 0, fuel: 100, engineTemp: 70,
 };
 
@@ -142,10 +148,11 @@ function firstAliveStation(b) {
 }
 
 const fighters = new FighterManager(scene, effects, bomber, audio);
-const bombs = new BombManager(scene, effects, world, audio);
+const targets = new TargetManager(scene, effects, audio, RAID_TARGETS);
+const bombs = new BombManager(scene, effects, targets, audio);
 const input = new Input(dom);
 
-Object.assign(game, { audio, effects, world, bomber, squadron, fighters, bombs, input, time: 0 });
+Object.assign(game, { audio, effects, world, targets, bomber, squadron, fighters, bombs, input, time: 0 });
 
 // Position the non-active planes relative to the active one, with a gentle bob.
 // Downed planes are skipped here — they tumble via updateWrecks().
@@ -357,12 +364,13 @@ function startGame() {
   // reset state
   Object.assign(game, {
     state: 'playing', airspeed: 140, altitude: 0, heading: 92,
-    hull: 100, score: 0, kills: 0, bombsLeft: 12, hits: 0,
-    targetDist: TARGET_START_DIST, flakTimer: 0, shake: 0, fuel: 100, engineTemp: 70,
+    hull: 100, score: 0, kills: 0, bombsLeft: BOMB_LOAD, hits: 0,
+    targetDist: Infinity, worldX: 0, flakTimer: 0, shake: 0, fuel: 100, engineTemp: 70,
   });
   dropped = 0;
-  world.ground.position.set(0, GROUND_Y, 0);
-  world.targetBuildings.forEach((b) => { b.destroyed = false; b.mesh.visible = true; });
+  game.time = 0;
+  targets.reset();
+  world.setLateral(0);
   activePlane = 0;
   bomber = squadron[0];
   game.bomber = bomber;
@@ -384,17 +392,17 @@ function endMission(won) {
   dom.over.classList.remove('hidden');
   dom.over.classList.toggle('win', won);
   dom.over.classList.toggle('lose', !won);
-  const total = world.targetBuildings.length;
+  const totalB = RAID_TARGETS * BUILDINGS_PER_TARGET;
   const survivors = squadron.filter((p) => p.userData.alive).length;
   const hull = Math.max(0, Math.round(game.hull));
   const hullBonus = hull * 10;
   const shipBonus = survivors * 250;
   game.score += hullBonus + shipBonus;
   dom.overTitle.textContent = won
-    ? (game.hits === total ? 'TARGET OBLITERATED' : 'RAID COMPLETE')
+    ? (game.hits >= totalB ? 'TARGETS OBLITERATED' : 'RAID COMPLETE')
     : 'SQUADRON LOST';
   dom.overStats.innerHTML = `
-    <div>Targets destroyed: <b>${game.hits} / ${total}</b></div>
+    <div>Structures destroyed: <b>${game.hits} / ${totalB}</b></div>
     <div>Ships returned: <b>${survivors} / ${squadron.length}</b></div>
     <div>Fighters splashed: <b>${game.kills}</b></div>
     <div>Flagship hull: <b>${hull}%</b></div>
@@ -431,10 +439,13 @@ function frame(now) {
 
   if (game.state === 'playing') {
     input.sample();
-    // forward flight: scroll the world beneath the bomber
-    world.scrollGround(-game.airspeed * dt);
-    game.targetDist = world.ground.position.z + TARGET_START_DIST;
-    game.heading = 92 + input.stick.x * 6 + world.ground.position.x * 0.02;
+    // forward flight: scroll the endless terrain and the targets beneath us
+    world.scrollWorld(-game.airspeed * dt);
+    targets.update(dt, game.airspeed);
+    world.setLateral(game.worldX);
+    targets.setLateral(game.worldX);
+    game.targetDist = targets.nextDist();
+    game.heading = 92 + input.stick.x * 6 + game.worldX * 0.02;
 
     game.time += dt;
     // spin every plane's propellers
@@ -455,14 +466,12 @@ function frame(now) {
     game.engineTemp += (tempTarget - game.engineTemp) * Math.min(1, dt * 0.5);
     if (game.roleKey === 'pilot') updatePilotInstruments();
     // bomb count from what's been dropped
-    game.bombsLeft = Math.max(0, 12 - dropped);
+    game.bombsLeft = Math.max(0, BOMB_LOAD - dropped);
 
-    // mission end when target passes behind
-    if (game.targetDist < -700 && game.state === 'playing') {
-      endMission(true);
-    }
-    // difficulty ramps as we near the target
-    fighters.difficulty = 1 + (1 - Math.min(1, Math.abs(game.targetDist) / TARGET_START_DIST)) * 4;
+    // raid ends once every target complex has passed behind us
+    if (targets.raidOver() && game.state === 'playing') endMission(true);
+    // difficulty ramps over the course of the raid
+    fighters.difficulty = 1 + Math.min(4, game.time / 25);
 
     // screen shake
     if (game.shake > 0) {

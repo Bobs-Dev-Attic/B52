@@ -166,6 +166,55 @@ html, body {
 #throttleFill { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; background: linear-gradient(0deg, var(--olive-lt), rgba(107,125,82,0.2)); }
 .throttle-lbl { position: absolute; top: 4px; left: 0; right: 0; text-align: center; font-size: 10px; color: var(--amber-dim); }
 
+/* ---------- Pilot instrument panel ---------- */
+#pilotPanel {
+  position: absolute; right: max(8px, env(safe-area-inset-right)); top: 50%;
+  transform: translateY(-50%);
+  width: 106px; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  pointer-events: none;
+}
+.instr {
+  position: relative; width: 96px; height: 96px; border-radius: 50%; align-self: center;
+  background: rgba(10, 12, 8, 0.8); border: 2px solid var(--stroke);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7); overflow: hidden;
+}
+.instr-lbl { position: absolute; bottom: 5px; left: 0; right: 0; text-align: center; font-size: 8px; letter-spacing: 1px; color: var(--amber-dim); z-index: 3; }
+
+/* Attitude indicator */
+.adi-ball { position: absolute; left: -25%; width: 150%; height: 300px; top: -102px; will-change: transform; }
+.adi-sky { position: absolute; top: 0; left: 0; right: 0; height: 150px; background: linear-gradient(#5a8fc0, #8fc0e0); }
+.adi-gnd { position: absolute; bottom: 0; left: 0; right: 0; height: 150px; background: linear-gradient(#7a5c34, #4a381e); }
+.adi-horizon { position: absolute; top: 148px; left: 0; right: 0; height: 2px; background: #fff; }
+.adi-ladder { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); width: 34px; }
+.adi-ladder::before, .adi-ladder::after { content: ""; position: absolute; left: 0; width: 34px; height: 1px; background: rgba(255,255,255,0.85); }
+.adi-ladder::before { top: -22px; } .adi-ladder::after { top: 22px; }
+.adi-wings { position: absolute; top: 50%; left: 50%; width: 46px; height: 2px; margin: -1px 0 0 -23px; background: var(--amber); z-index: 2; box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
+.adi-wings::after { content: ""; position: absolute; top: -2px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--amber); }
+.adi-ptr { position: absolute; top: 1px; left: 50%; margin-left: -5px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid var(--amber); z-index: 2; }
+
+/* Compass */
+.rose { position: absolute; inset: 4px; border-radius: 50%; will-change: transform; }
+.rose b { position: absolute; font-size: 12px; font-weight: bold; color: #e8e8e0; }
+.c-n { top: 3px; left: 50%; transform: translateX(-50%); color: var(--red); }
+.c-s { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.c-e { right: 5px; top: 50%; transform: translateY(-50%); }
+.c-w { left: 5px; top: 50%; transform: translateY(-50%); }
+.c-t { position: absolute; top: 0; left: 50%; width: 1px; height: 100%; margin-left: -0.5px; }
+.c-t::before { content: ""; position: absolute; top: 2px; left: 0; width: 1px; height: 6px; background: rgba(255,204,68,0.55); }
+.c-t0 { transform: rotate(45deg); } .c-t1 { transform: rotate(90deg); } .c-t2 { transform: rotate(135deg); } .c-t3 { transform: rotate(0deg); }
+.c-lubber { position: absolute; top: -1px; left: 50%; margin-left: -5px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid var(--amber); z-index: 3; }
+.c-read { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15px; font-weight: bold; color: var(--amber); background: rgba(0,0,0,0.55); padding: 0 4px; border-radius: 3px; z-index: 3; }
+
+/* Bar gauges */
+.bar-instr { display: flex; align-items: center; gap: 4px; background: rgba(10, 12, 8, 0.8); border: 1px solid var(--stroke); border-radius: 4px; padding: 3px 5px; font-size: 10px; }
+.bi-lbl { color: var(--amber-dim); width: 28px; }
+.bi-bar { flex: 1; height: 6px; background: rgba(0, 0, 0, 0.5); border-radius: 2px; overflow: hidden; }
+.bi-bar i { display: block; height: 100%; width: 50%; background: var(--olive-lt); transition: width 0.15s; }
+.bi-val { color: var(--amber); min-width: 30px; text-align: right; }
+.bi-unit { color: var(--amber-dim); font-size: 8px; width: 20px; }
+
+@media (max-height: 680px) { #pilotPanel .bar-instr { display: none; } }
+
 /* ---------- Start / end screens ---------- */
 #start, #over {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;

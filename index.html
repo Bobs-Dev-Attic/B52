@@ -96,6 +96,37 @@
       <div id="throttleFill"></div>
       <span class="throttle-lbl">THR</span>
     </div>
+
+    <!-- Pilot instrument panel (only shown in the pilot seat) -->
+    <div id="pilotPanel" class="hidden">
+      <!-- Attitude indicator: pitch & bank -->
+      <div class="instr adi">
+        <div class="adi-ball" id="adiBall">
+          <div class="adi-sky"></div>
+          <div class="adi-gnd"></div>
+          <div class="adi-horizon"></div>
+          <div class="adi-ladder"></div>
+        </div>
+        <div class="adi-wings"></div>
+        <div class="adi-ptr"></div>
+        <span class="instr-lbl">ATT</span>
+      </div>
+      <!-- Heading / compass -->
+      <div class="instr compass">
+        <div class="rose" id="compassRose">
+          <b class="c-n">N</b><b class="c-e">E</b><b class="c-s">S</b><b class="c-w">W</b>
+          <span class="c-t c-t0"></span><span class="c-t c-t1"></span><span class="c-t c-t2"></span><span class="c-t c-t3"></span>
+        </div>
+        <div class="c-lubber"></div>
+        <span class="c-read" id="hdgRead">092</span>
+        <span class="instr-lbl">HDG</span>
+      </div>
+      <!-- Bar gauges -->
+      <div class="bar-instr"><span class="bi-lbl">A/S</span><span class="bi-bar"><i id="asiBar"></i></span><span class="bi-val" id="asiVal">0</span><span class="bi-unit">mph</span></div>
+      <div class="bar-instr"><span class="bi-lbl">ALT</span><span class="bi-bar"><i id="altBarP"></i></span><span class="bi-val" id="altValP">0</span><span class="bi-unit">ft</span></div>
+      <div class="bar-instr"><span class="bi-lbl">FUEL</span><span class="bi-bar"><i id="fuelBar"></i></span><span class="bi-val" id="fuelVal">100</span><span class="bi-unit">%</span></div>
+      <div class="bar-instr"><span class="bi-lbl">TEMP</span><span class="bi-bar"><i id="tempBar"></i></span><span class="bi-val" id="tempVal">70</span><span class="bi-unit">°C</span></div>
+    </div>
   </div>
 
   <!-- ===================== START SCREEN ===================== -->

@@ -5,7 +5,7 @@ a daylight raid over Germany and switch freely between three crew positions:
 
 | Position | What you do |
 | --- | --- |
-| 🛩️ **Pilot** | Steer the ship, climb/dive, work the throttle and hold your line through the flak toward the target. |
+| 🛩️ **Pilot** | Steer the ship, climb/dive, work the throttle and hold your line through the flak toward the target. A cockpit instrument panel shows the **attitude indicator** (pitch & bank), **compass**, **airspeed**, **altitude**, **fuel**, and **engine temperature**. |
 | 🔫 **Gunner** | Man the four gun turrets (top, tail, nose, belly), track incoming Luftwaffe fighters and splash them before they chew up the hull. Watch the gun heat. |
 | 💣 **Bombardier** | Look down through the glazed nose, line the target up under the bombsight, and release your stick of bombs — the predictor shows where they'll actually fall. |
 

@@ -55,7 +55,7 @@ export class PilotRole {
     g.altitude = THREE.MathUtils.clamp(g.altitude, -70, 150);
     b.position.y += (g.altitude - b.position.y) * Math.min(1, dt * 2);
     // lateral drift steers the flight path across the map
-    g.world.ground.position.x -= input.stick.x * 60 * dt;
+    g.worldX -= input.stick.x * 60 * dt;
     // throttle -> airspeed
     g.airspeed = 80 + input.throttle * 105;
     g.audio.setThrottle(input.throttle);

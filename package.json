@@ -1,6 +1,6 @@
 {
   "name": "b52-raid",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Mobile low-poly 3D WWII heavy-bomber crew simulator — fly, gun the turrets, and bomb the target over Germany.",
   "type": "module",
   "scripts": {

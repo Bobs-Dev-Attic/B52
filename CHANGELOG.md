@@ -5,6 +5,22 @@ All notable changes to **B-52 Raid** are recorded here. Versioning follows
 tag in the corner, and is kept in sync across `package.json`, `src/main.js`
 (`VERSION`), and this file.
 
+## [0.5.0] — 2026-07-15
+### Added
+- **Endless procedural battlefield.** The countryside is now built from terrain
+  strips that recycle: once a strip falls behind the bomber it teleports to the
+  front and re-randomises its fields, hills and forests, so the ground never runs
+  out and keeps changing.
+- **Extended multi-target raids.** A raid is now a sequence of **6 target
+  complexes** that scroll in one after another, with a larger **24-bomb** load.
+  The raid ends after the last target passes ("RAID COMPLETE" / "TARGETS
+  OBLITERATED"), and the debrief tallies structures destroyed.
+- Fighter difficulty now ramps with time-in-raid instead of distance-to-target.
+
+### Changed
+- Bomb hit-testing and the target marker rings moved into a dedicated target
+  manager; terrain and targets share the pilot's lateral steering.
+
 ## [0.4.0] — 2026-07-14
 ### Added
 - **Pilot instrument panel** — a cockpit "glass panel" shown only in the pilot

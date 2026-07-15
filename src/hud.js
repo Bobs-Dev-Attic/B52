@@ -21,8 +21,12 @@ export function updateHud(dom, g) {
     : hull > 25 ? 'linear-gradient(90deg,#c9a13a,#e0c04a)'
     : 'linear-gradient(90deg,#b23a2a,#e04a3a)';
 
-  const distMi = Math.max(0, g.targetDist / 1609);
-  dom.tgtDist.textContent = distMi > 0.05 ? distMi.toFixed(1) : 'OVER';
+  if (!isFinite(g.targetDist)) {
+    dom.tgtDist.textContent = '--';
+  } else {
+    const distMi = Math.max(0, g.targetDist / 1609);
+    dom.tgtDist.textContent = distMi > 0.05 ? distMi.toFixed(1) : 'OVER';
+  }
   dom.bombs.textContent = g.bombsLeft;
   dom.score.textContent = g.score.toLocaleString();
 }

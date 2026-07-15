@@ -5,6 +5,16 @@ All notable changes to **B-52 Raid** are recorded here. Versioning follows
 tag in the corner, and is kept in sync across `package.json`, `src/main.js`
 (`VERSION`), and this file.
 
+## [0.4.0] — 2026-07-14
+### Added
+- **Pilot instrument panel** — a cockpit "glass panel" shown only in the pilot
+  seat, with an **attitude indicator** (artificial horizon for pitch & bank), a
+  **heading compass**, and gauges for **airspeed, altitude, fuel, and engine
+  temperature**.
+- **Fuel** burns down over the raid (faster at high throttle) and **engine
+  temperature** rises with throttle and battle damage; both read out live and
+  change colour as they approach their limits.
+
 ## [0.3.0] — 2026-07-14
 ### Added
 - **Battle damage & casualties.** Each squadron plane now has its own hull and a

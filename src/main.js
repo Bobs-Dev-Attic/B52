@@ -10,7 +10,7 @@ import { PilotRole, GunnerRole, BombardierRole } from './roles.js';
 import { feed, updateHud } from './hud.js';
 
 // Game version — keep in sync with package.json and CHANGELOG.md.
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 // ------------------------------- DOM refs ----------------------------------
 const $ = (id) => document.getElementById(id);
@@ -46,8 +46,46 @@ const game = {
   airspeed: 140, altitude: 0, heading: 92,
   hull: 100, score: 0, kills: 0, bombsLeft: 12, hits: 0,
   targetDist: TARGET_START_DIST,
-  flakTimer: 0, shake: 0,
+  flakTimer: 0, shake: 0, fuel: 100, engineTemp: 70,
 };
+
+// Cached pilot-instrument DOM nodes.
+const pi = {
+  panel: $('pilotPanel'),
+  adiBall: $('adiBall'), compassRose: $('compassRose'), hdgRead: $('hdgRead'),
+  asiBar: $('asiBar'), asiVal: $('asiVal'), altBar: $('altBarP'), altVal: $('altValP'),
+  fuelBar: $('fuelBar'), fuelVal: $('fuelVal'), tempBar: $('tempBar'), tempVal: $('tempVal'),
+};
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+// Drive the cockpit instruments from flight state (called while piloting).
+function updatePilotInstruments() {
+  const rollDeg = THREE.MathUtils.radToDeg(bomber.rotation.z);
+  // nose-up (rotation.x < 0) drops the horizon so more sky shows
+  const pitchPx = -THREE.MathUtils.radToDeg(bomber.rotation.x) * 2.2;
+  pi.adiBall.style.transform = `rotate(${rollDeg}deg) translateY(${pitchPx}px)`;
+
+  pi.compassRose.style.transform = `rotate(${-game.heading}deg)`;
+  pi.hdgRead.textContent = String((((game.heading % 360) + 360) % 360) | 0).padStart(3, '0');
+
+  const spd = Math.round(game.airspeed * 1.7);
+  pi.asiVal.textContent = spd;
+  pi.asiBar.style.width = `${clamp01((spd - 120) / 220) * 100}%`;
+
+  const altFt = Math.round((bomber.position.y - GROUND_Y) * 30);
+  pi.altVal.textContent = altFt.toLocaleString();
+  pi.altBar.style.width = `${clamp01((altFt - 8000) / 8000) * 100}%`;
+
+  const fuel = Math.max(0, Math.round(game.fuel));
+  pi.fuelVal.textContent = fuel;
+  pi.fuelBar.style.width = `${fuel}%`;
+  pi.fuelBar.style.background = fuel < 20 ? '#e04a3a' : fuel < 40 ? '#e0c04a' : '#6b9d52';
+
+  const temp = Math.round(game.engineTemp);
+  pi.tempVal.textContent = temp;
+  pi.tempBar.style.width = `${clamp01((temp - 40) / 140) * 100}%`;
+  pi.tempBar.style.background = temp > 155 ? '#e04a3a' : temp > 130 ? '#e0c04a' : '#5e9ecb';
+}
 
 const audio = new Audio();
 const effects = new Effects(scene);
@@ -281,6 +319,7 @@ function setRole(name) {
   current.enter();
   dom.roleName.textContent = name.toUpperCase();
   document.querySelectorAll('.role-btn').forEach((b) => b.classList.toggle('active', b.dataset.role === name));
+  pi.panel.classList.toggle('hidden', name !== 'pilot');
   input.setMode(name);
 }
 
@@ -319,7 +358,7 @@ function startGame() {
   Object.assign(game, {
     state: 'playing', airspeed: 140, altitude: 0, heading: 92,
     hull: 100, score: 0, kills: 0, bombsLeft: 12, hits: 0,
-    targetDist: TARGET_START_DIST, flakTimer: 0, shake: 0,
+    targetDist: TARGET_START_DIST, flakTimer: 0, shake: 0, fuel: 100, engineTemp: 70,
   });
   dropped = 0;
   world.ground.position.set(0, GROUND_Y, 0);
@@ -410,6 +449,11 @@ function frame(now) {
     updateFlak(dt);
     // HUD hull tracks the plane you're currently flying
     game.hull = bomber.userData.hull;
+    // fuel burn + engine temperature respond to throttle and battle damage
+    game.fuel = Math.max(0, game.fuel - (0.25 + input.throttle * 0.9) * dt);
+    const tempTarget = 55 + input.throttle * 95 + (100 - bomber.userData.hull) * 0.35;
+    game.engineTemp += (tempTarget - game.engineTemp) * Math.min(1, dt * 0.5);
+    if (game.roleKey === 'pilot') updatePilotInstruments();
     // bomb count from what's been dropped
     game.bombsLeft = Math.max(0, 12 - dropped);
 
